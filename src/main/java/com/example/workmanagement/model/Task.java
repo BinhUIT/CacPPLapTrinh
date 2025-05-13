@@ -1,7 +1,11 @@
 package com.example.workmanagement.model;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import com.example.workmanagement.request.CreateTaskRequest;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -30,8 +34,10 @@ public class Task {
     @JoinColumn(name="userid") 
     private User user;
 
-    private String name;
+    private String name; 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private Date startTime;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private Date endTime;
     private String description;
     private float progress;
@@ -51,6 +57,17 @@ public class Task {
         this.description = description;
         this.progress = progress;
         this.currentProgress= currentProgress;
+    }
+    public Task(CreateTaskRequest request, User user) {
+        this.user= user;
+        this.name=request.getName();
+        this.startTime= request.getStartTime();
+        this.endTime= request.getEndTime();
+        this.description= request.getDescription();
+        this.progress= 1;
+        this.currentProgress=0;
+        this.parent=null;
+        this.children=new ArrayList<>();
     }
     
     
