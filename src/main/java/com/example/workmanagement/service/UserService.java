@@ -3,7 +3,6 @@ package com.example.workmanagement.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -47,7 +46,7 @@ public class UserService {
         }
         
         user.setPassword(encoder.encode(user.getPassword()));
-        userRepository.save(user);
+        userRepository.save(new User(user));
         return user;
     }
     public LoginResponse login(LoginRequest request) throws Exception {

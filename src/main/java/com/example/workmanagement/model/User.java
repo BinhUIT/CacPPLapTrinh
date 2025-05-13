@@ -1,8 +1,13 @@
 package com.example.workmanagement.model;
 
+import java.util.List;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,10 +22,11 @@ import lombok.Setter;
 @Table(name="user")
 public class User {
     @Id
-    @Column(name="userid", columnDefinition = "int primary key auto_increment") 
+    @Column(name="userid", columnDefinition = "int") 
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private int userId;
 
-    @Column(name="name", columnDefinition = "varchar(50) unique") 
+    @Column(name="name", columnDefinition = "varchar(50)") 
     private String name;
 
     @Column(name="email", columnDefinition = "varchar(50)") 
@@ -31,4 +37,13 @@ public class User {
 
     @Column(name="password", columnDefinition = "varchar(200)")
     private String password;
+    @OneToMany(mappedBy="user") 
+    private List<Task> listTask;
+
+    public User(User user) {
+        this.name= user.name;
+        this.email= user.email;
+        this.phone=user.phone;
+        this.password= user.password;
+    }
 }
