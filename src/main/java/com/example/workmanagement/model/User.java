@@ -39,6 +39,8 @@ public class User {
     private String password;
     @OneToMany(mappedBy="user") 
     private List<Task> listTask;
+    @OneToMany(mappedBy="user") 
+    private List<Session> listSession;
 
     public User(User user) {
         this.name= user.name;

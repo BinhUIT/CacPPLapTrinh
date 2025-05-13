@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.workmanagement.model.Session;
 import com.example.workmanagement.model.User;
 import com.example.workmanagement.request.CreateChildTaskRequest;
 import com.example.workmanagement.request.CreateTaskRequest;
@@ -18,33 +19,38 @@ import com.example.workmanagement.request.LoginRequest;
 import com.example.workmanagement.response.LoginResponse;
 import com.example.workmanagement.response.TaskResponse;
 import com.example.workmanagement.service.JWTService;
+import com.example.workmanagement.service.SessionService;
 import com.example.workmanagement.service.TaskService;
 import com.example.workmanagement.service.UserService;
 
 @RestController
 public class UserController {
-    
+
     private final UserService userService;
     private final JWTService jwtService;
     private final TaskService taskService;
-    public UserController(UserService userService, JWTService jwtService, TaskService taskService) {
-        this.taskService= taskService;
-        this.userService= userService;
-        this.jwtService= jwtService;
+    private final SessionService sessionService;
+
+    public UserController(UserService userService, JWTService jwtService, TaskService taskService,
+            SessionService sessionService) {
+        this.taskService = taskService;
+        this.userService = userService;
+        this.jwtService = jwtService;
+        this.sessionService = sessionService;
     }
 
-    @PostMapping("/register") 
+    @PostMapping("/register")
     public ResponseEntity<User> register(@RequestBody User user) {
         try {
             User res = userService.register(user);
             return new ResponseEntity<>(res, HttpStatus.OK);
-        } 
-        catch(Exception e)  {
-            if(e.getMessage().equals("User exist")) {
+        } catch (Exception e) {
+            if (e.getMessage().equals("User exist")) {
                 return new ResponseEntity<>(null, HttpStatus.CONFLICT);
             }
-            String[] messages = {"Invalid email","Invalid password", "Invalid phone"};
-            if(e.getMessage().equals(messages[0])||e.getMessage().equals(messages[1])||e.getMessage().equals(messages[2])) {
+            String[] messages = { "Invalid email", "Invalid password", "Invalid phone" };
+            if (e.getMessage().equals(messages[0]) || e.getMessage().equals(messages[1])
+                    || e.getMessage().equals(messages[2])) {
                 e.printStackTrace();
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             }
@@ -52,43 +58,73 @@ public class UserController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    @PostMapping("/login") 
+
+    @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         try {
             LoginResponse res = userService.login(request);
             return new ResponseEntity<>(res, HttpStatus.OK);
-        } 
-        catch(Exception e) {
-            if(e.getMessage().equals("Forbidden")) {
+        } catch (Exception e) {
+            if (e.getMessage().equals("Forbidden")) {
                 return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
             }
             e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    @GetMapping("/all_task") 
+
+    @GetMapping("/all_task")
     public ResponseEntity<List<TaskResponse>> getAllTask(@RequestHeader("Authorization") String authHeader) {
         String email = jwtService.extractEmail(authHeader.substring(7));
         return new ResponseEntity<>(taskService.getTaskByEmail(email), HttpStatus.OK);
     }
-    @PostMapping("/create/new_task") 
-    public ResponseEntity<TaskResponse> createNewTask(@RequestHeader("Authorization") String authHeader, @RequestBody CreateTaskRequest request) {
-        String email = jwtService.extractEmail(authHeader.substring(7));
-        return new ResponseEntity<>(taskService.createNewTask(request, email), HttpStatus.OK);
+
+    @PostMapping("/create/new_task")
+    public ResponseEntity<TaskResponse> createNewTask(@RequestHeader("Authorization") String authHeader,
+            @RequestBody CreateTaskRequest request) {
+        try {
+            String email = jwtService.extractEmail(authHeader.substring(7));
+            return new ResponseEntity<>(taskService.createNewTask(request, email), HttpStatus.OK);
+        }
+
+        catch (Exception e) {
+            e.printStackTrace();
+            if (e.getMessage().equals("Invalid start and end time")) {
+                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            }
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
-    @PostMapping("/create/child_task/{parentId}") 
-    public ResponseEntity<TaskResponse> createNewChildTask(@RequestHeader("Authorization") String authHeader, @RequestBody CreateChildTaskRequest request,@PathVariable int parentId) {
+
+    @PostMapping("/create/child_task/{parentId}")
+    public ResponseEntity<TaskResponse> createNewChildTask(@RequestHeader("Authorization") String authHeader,
+            @RequestBody CreateChildTaskRequest request, @PathVariable int parentId) {
         try {
             String email = jwtService.extractEmail(authHeader.substring(7));
             TaskResponse res = taskService.createChildTask(request, email, parentId);
             return new ResponseEntity<>(res, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
-            if(e.getMessage().equals("Child task can not start before its parent")||e.getMessage().equals("Child task can not end after its parent")) {
+            if (e.getMessage().equals("Child task can not start before its parent")
+                    || e.getMessage().equals("Child task can not end after its parent")
+                    || e.getMessage().equals("Invalid start and end time")) {
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             }
             e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/start_session")
+    public ResponseEntity<Session> startSession(@RequestHeader("Authorization") String authHeader) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        return new ResponseEntity<>(sessionService.startSession(email), HttpStatus.OK);
+    }
+
+    @GetMapping("/end_session")
+    public ResponseEntity<Session> endSession(@RequestHeader("Authorization") String authHeader) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        return new ResponseEntity<>(sessionService.endSession(email), HttpStatus.OK);
+    }
+
 }

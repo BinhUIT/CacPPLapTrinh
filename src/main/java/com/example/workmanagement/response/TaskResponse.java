@@ -26,21 +26,22 @@ public class TaskResponse {
     private float progress;
     private float currentProgress;
     private List<TaskResponse> child;
-    
+
     public TaskResponse(Task task) {
         this.child = new ArrayList<>();
-        this.taskId= task.getTaskId();
-        this.user= task.getUser();
+        this.taskId = task.getTaskId();
+        this.user = task.getUser();
         this.user.setListTask(new ArrayList<>());
-        this.name= task.getName();
-        this.startTime= task.getStartTime();
-        this.endTime= task.getEndTime();
-        this.description= task.getDescription();
-        this.progress= task.getProgress();
-        this.currentProgress= task.getCurrentProgress();
-        for(int i=0;i<task.getChildren().size();i++) {
+        this.user.setListSession(new ArrayList<>());
+        this.name = task.getName();
+        this.startTime = task.getStartTime();
+        this.endTime = task.getEndTime();
+        this.description = task.getDescription();
+        this.progress = task.getProgress();
+        this.currentProgress = task.getCurrentProgress();
+        for (int i = 0; i < task.getChildren().size(); i++) {
             this.child.add(new TaskResponse(task.getChildren().get(i)));
-            this.child.get(i).user=null;
+            this.child.get(i).user = null;
         }
     }
 }
