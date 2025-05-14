@@ -16,8 +16,11 @@ import com.example.workmanagement.model.User;
 import com.example.workmanagement.request.CreateChildTaskRequest;
 import com.example.workmanagement.request.CreateTaskRequest;
 import com.example.workmanagement.request.LoginRequest;
+import com.example.workmanagement.request.SplitTaskRequest;
+import com.example.workmanagement.request.TaskUpdateProgressRequest;
 import com.example.workmanagement.response.LoginResponse;
 import com.example.workmanagement.response.TaskResponse;
+import com.example.workmanagement.service.CompleteService;
 import com.example.workmanagement.service.JWTService;
 import com.example.workmanagement.service.SessionService;
 import com.example.workmanagement.service.TaskService;
@@ -30,13 +33,15 @@ public class UserController {
     private final JWTService jwtService;
     private final TaskService taskService;
     private final SessionService sessionService;
+    private final CompleteService completeService;
 
     public UserController(UserService userService, JWTService jwtService, TaskService taskService,
-            SessionService sessionService) {
+            SessionService sessionService, CompleteService completeService) {
         this.taskService = taskService;
         this.userService = userService;
         this.jwtService = jwtService;
         this.sessionService = sessionService;
+        this.completeService = completeService;
     }
 
     @PostMapping("/register")
@@ -96,21 +101,31 @@ public class UserController {
         }
     }
 
-    @PostMapping("/create/child_task/{parentId}")
-    public ResponseEntity<TaskResponse> createNewChildTask(@RequestHeader("Authorization") String authHeader,
-            @RequestBody CreateChildTaskRequest request, @PathVariable int parentId) {
+    @PostMapping("/split/task")
+    public ResponseEntity<TaskResponse> splitTask(@RequestHeader("Authorization") String authHeader,
+            @RequestBody SplitTaskRequest request) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
         try {
-            String email = jwtService.extractEmail(authHeader.substring(7));
-            TaskResponse res = taskService.createChildTask(request, email, parentId);
-            return new ResponseEntity<>(res, HttpStatus.OK);
+            return new ResponseEntity<>(taskService.splitTask(request, email), HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
-            if (e.getMessage().equals("Child task can not start before its parent")
-                    || e.getMessage().equals("Child task can not end after its parent")
-                    || e.getMessage().equals("Invalid start and end time")) {
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            if (e.getMessage().equals("400") || e.getMessage().equals("401") || e.getMessage().equals("404")) {
+                int statusCode = Integer.parseInt(e.getMessage());
+                HttpStatus status;
+                switch (statusCode) {
+                    case 400:
+                        status = HttpStatus.BAD_REQUEST;
+                        break;
+                    case 401:
+                        status = HttpStatus.UNAUTHORIZED;
+                        break;
+                    case 404:
+                        status = HttpStatus.NOT_FOUND;
+                        break;
+                    default:
+                        return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+                return new ResponseEntity<>(null, status);
             }
-            e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -127,4 +142,32 @@ public class UserController {
         return new ResponseEntity<>(sessionService.endSession(email), HttpStatus.OK);
     }
 
+    @PostMapping("/update/progress")
+    public ResponseEntity<TaskResponse> updateTaskProgress(@RequestHeader("Authorization") String authHeader,
+            @RequestBody TaskUpdateProgressRequest request) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        try {
+            return new ResponseEntity<>(completeService.updateTaskProgress(request, email), HttpStatus.OK);
+        } catch (Exception e) {
+            if (e.getMessage().equals("400") || e.getMessage().equals("401") || e.getMessage().equals("404")) {
+                int statusCode = Integer.parseInt(e.getMessage());
+                HttpStatus status;
+                switch (statusCode) {
+                    case 400:
+                        status = HttpStatus.BAD_REQUEST;
+                        break;
+                    case 401:
+                        status = HttpStatus.UNAUTHORIZED;
+                        break;
+                    case 404:
+                        status = HttpStatus.NOT_FOUND;
+                        break;
+                    default:
+                        return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+                return new ResponseEntity<>(null, status);
+            }
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

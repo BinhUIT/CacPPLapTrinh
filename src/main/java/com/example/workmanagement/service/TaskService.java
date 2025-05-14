@@ -13,6 +13,7 @@ import com.example.workmanagement.repository.TaskRepository;
 import com.example.workmanagement.repository.UserRepository;
 import com.example.workmanagement.request.CreateChildTaskRequest;
 import com.example.workmanagement.request.CreateTaskRequest;
+import com.example.workmanagement.request.SplitTaskRequest;
 import com.example.workmanagement.response.TaskResponse;
 
 import jakarta.persistence.EntityManager;
@@ -78,27 +79,43 @@ public class TaskService {
         return new TaskResponse(task);
     }
 
-    public TaskResponse createChildTask(CreateChildTaskRequest request, String email, int parentId) throws Exception {
+    private void createChildTask(CreateChildTaskRequest request, Task parent) throws Exception {
         if (request.getEndTime().before(request.getStartTime())) {
-            throw new Exception("Invalid start and end time");
+            throw new Exception("400");
         }
-        Task parent = taskRepo.findById(parentId).orElse(null);
-        if (parent == null) {
-            return null;
-        }
-        if (!parent.getUser().getEmail().equals(email)) {
-            return null;
-        }
+
         if (request.getStartTime().before(parent.getStartTime())) {
-            throw new Exception("Child task can not start before its parent");
+            throw new Exception("400");
         }
         if (request.getEndTime().after(parent.getEndTime())) {
-            throw new Exception("Child task can not end after its parent");
+            throw new Exception("400");
         }
         Task task = new Task(request, parent.getUser());
         task.setParent(parent);
         task.setProgress(request.getProgress());
         taskRepo.save(task);
-        return new TaskResponse(task);
+
+    }
+
+    public TaskResponse splitTask(SplitTaskRequest request, String email) throws Exception {
+        Task parentTask = taskRepo.findById(request.getParentId()).orElse(null);
+        if (parentTask == null) {
+            throw new Exception("404");
+        }
+        if (!parentTask.getUser().getEmail().equals(email)) {
+            throw new Exception("401");
+        }
+        float totalProgress = 0;
+        for (int i = 0; i < request.getListRequest().size(); i++) {
+            totalProgress += request.getListRequest().get(i).getProgress();
+        }
+        if (totalProgress != parentTask.getProgress()) {
+            throw new Exception("400");
+        }
+        for (int i = 0; i < request.getListRequest().size(); i++) {
+            createChildTask(request.getListRequest().get(i), parentTask);
+        }
+        taskRepo.save(parentTask);
+        return new TaskResponse(parentTask);
     }
 }
