@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Work Management</title>
+    <link rel="stylesheet" href="/css/dashboard.css"> <style>
+    /* Bổ sung hoặc ghi đè CSS cho trang báo cáo */
+    .report-section {
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .report-section h2 {
+        color: #2c3e50;
+        margin-top: 0;
+        margin-bottom: 25px;
+        text-align: center;
+        font-size: 2em;
+    }
+
+    .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .report-card {
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .report-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .report-card h3 {
+        color: #3498db;
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 1.3em;
+    }
+
+    .report-card p {
+        font-size: 2.2em;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .report-card span.unit {
+        font-size: 0.8em;
+        color: #777;
+        display: block;
+        margin-top: 5px;
+    }
+
+    .report-filter {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .report-filter label {
+        margin-right: 10px;
+        font-weight: bold;
+        color: #555;
+    }
+
+    .report-filter select,
+    .report-filter button {
+        padding: 8px 15px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 1em;
+        cursor: pointer;
+        margin: 0 5px;
+    }
+
+    .report-filter button {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+        transition: background-color 0.3s ease;
+    }
+
+    .report-filter button:hover {
+        background-color: #0056b3;
+    }
+
+    .report-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .report-list li {
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.05em;
+        color: #555;
+    }
+    .report-list li span.bold {
+        font-weight: bold;
+        color: #333;
+    }
+</style>
+</head>
+<body>
+<div class="navbar">
+    <div class="navbar-brand">Work Management</div>
+    <div class="navbar-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/sessions">Sessions</a>
+        <a href="/reports" class="active">Reports</a>
+        <form th:action="@{/logout}" method="post" style="display: inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </div>
+</div>
+
+<div class="dashboard-container"> <h1>Work Reports</h1>
+
+    <div class="report-filter">
+        <form th:action="@{/reports}" method="get">
+            <label for="period">Filter by:</label>
+            <select id="period" name="period">
+                <option value="today" th:selected="${period == 'today'}">Today</option>
+                <option value="last7days" th:selected="${period == 'last7days'}">Last 7 Days</option>
+                <option value="thisMonth" th:selected="${period == 'thisMonth'}">This Month</option>
+                <option value="allTime" th:selected="${period == 'allTime'}">All Time</option>
+            </select>
+            <button type="submit">Apply Filter</button>
+        </form>
+    </div>
+
+    <div class="report-section">
+        <h2>Summary Statistics</h2>
+        <div class="report-grid">
+            <div class="report-card">
+                <h3>Tasks Completed</h3>
+                <p><span th:text="${totalCompletedTasks}">0</span></p>
+                <span class="unit">tasks</span>
+            </div>
+            <div class="report-card">
+                <h3>Total Work Time</h3>
+                <p><span th:text="${#numbers.formatDecimal(totalWorkHours, 1, 1)}">0.0</span></p>
+                <span class="unit">hours</span>
+            </div>
+            <div class="report-card">
+                <h3>Average Task Completion Time</h3>
+                <p><span th:text="${#numbers.formatDecimal(avgCompletionMinutes, 1, 1)}">0.0</span></p>
+                <span class="unit">minutes/task</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <h2>Completed Tasks List</h2>
+        <div th:if="${completedTasks.isEmpty()}">
+            <p style="text-align: center; font-style: italic;">No completed tasks found for the selected period.</p>
+        </div>
+        <ul th:unless="${completedTasks.isEmpty()}" class="report-list">
+            <li th:each="complete : ${completedTasks}">
+                <div>
+                    <span class="bold" th:text="${complete.taskName}">Task Name</span>
+                    <br/>
+                    Completed at: <span th:text="${#temporals.format(complete.completionTime, 'dd-MM-yyyy HH:mm')}"></span>
+                </div>
+                <div>
+                    Duration: <span class="bold" th:text="${complete.durationMinutes}">0</span> mins
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="report-section">
+        <h2>Work Sessions List</h2>
+        <div th:if="${workSessions.isEmpty()}">
+            <p style="text-align: center; font-style: italic;">No work sessions found for the selected period.</p>
+        </div>
+        <ul th:unless="${workSessions.isEmpty()}" class="report-list">
+            <li th:each="mysSsession : ${workSessions}">
+                <div>
+                    Session: <span class="bold" th:text="${#temporals.format(session.startTime, 'dd-MM-yyyy HH:mm')}"></span>
+                    to <span class="bold" th:text="${#temporals.format(session.endTime, 'dd-MM-yyyy HH:mm')}"></span>
+                </div>
+                <div>
+                    Duration: <span class="bold" th:text="${session.durationMinutes}">0</span> mins
+                </div>
+            </li>
+        </ul>
+    </div>
+
+</div>
+</body>
+</html>

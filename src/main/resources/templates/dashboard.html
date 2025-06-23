@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Work Management</title>
+    <link rel="stylesheet" href="/css/dashboard.css"> </head>
+<body>
+<div class="navbar">
+    <div class="navbar-brand">Work Management</div>
+    <div class="navbar-links">
+        <a href="/dashboard" class="active">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/sessions">Sessions</a>
+        <a href="/reports">Reports</a>
+        <form th:action="@{/logout}" method="post" style="display: inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </div>
+</div>
+
+<div class="dashboard-container">
+    <h1>Welcome, <span th:text="${username}">User!</span></h1>
+
+    <div class="summary-cards">
+        <div class="card">
+            <h3>Tasks Due Soon</h3>
+            <p>You have <strong><span th:text="${tasksDueSoonCount}">5</span></strong> tasks due in the next 7 days.</p>
+            <a href="/tasks" class="card-link">View All Tasks</a>
+        </div>
+        <div class="card">
+            <h3>Active Session</h3>
+            <p th:if="${activeSession}">
+                Currently in session since <strong th:text="${activeSessionStartTime}">08:00 AM</strong>.
+            </p>
+            <p th:unless="${activeSession}">
+                No active session. <a href="/sessions/start">Start a new session</a>.
+            </p>
+            <a th:if="${activeSession}" href="/sessions" class="card-link">Manage Sessions</a>
+        </div>
+        <div class="card">
+            <h3>Completed Today</h3>
+            <p>You've completed <strong><span th:text="${completedTodayCount}">2</span></strong> tasks today.</p>
+            <a href="/reports" class="card-link">View Reports</a>
+        </div>
+    </div>
+
+    <div class="recent-activity">
+        <h2>Recent Activity</h2>
+        <div th:if="${recentTasks.isEmpty()}">
+            <p>No recent activity. Start by creating a <a href="/tasks/new">new task</a>!</p>
+        </div>
+        <ul th:unless="${recentTasks.isEmpty()}" class="task-list">
+            <li th:each="task : ${recentTasks}">
+                <span th:text="${task.name}">Task Name</span> -
+                <span th:text="${task.progress}">Progress</span> -
+                <span th:text="${#temporals.format(task.endTime, 'dd-MM-yyyy')}">Due Date</span>
+                <a th:href="@{/tasks/{id}(id=${task.taskId})}" class="view-task-link">View</a>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>
