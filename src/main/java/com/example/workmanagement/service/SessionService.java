@@ -4,21 +4,19 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Service;
 
 import com.example.workmanagement.middleware.FilterUserInfo;
 import com.example.workmanagement.model.Session;
 import com.example.workmanagement.model.User;
 import com.example.workmanagement.repository.SessionRepository;
-import com.example.workmanagement.repository.UserRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 @Service
 public class SessionService {
@@ -39,6 +37,7 @@ public class SessionService {
         List<Session> listSession = getWorkingSession(email);
 
         if (!listSession.isEmpty()) {
+            System.out.println("List session is not empty");
             return null;
         }
         User user = userService.findUserByEmail(email);
@@ -48,6 +47,7 @@ public class SessionService {
         Session session = new Session(user);
         sessionRepo.save(session);
         filterUserInfo.filterUserInfo(session.getUser());
+        
         return session;
 
     }
@@ -61,11 +61,12 @@ public class SessionService {
         currentSession.setEndTime(new Date());
         sessionRepo.save(currentSession);
         filterUserInfo.filterUserInfo(currentSession.getUser());
+        
         return currentSession;
 
     }
 
-    private List<Session> getWorkingSession(String email) {
+    public List<Session> getWorkingSession(String email) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Session> cQuery = cb.createQuery(Session.class);
         Root<Session> rootSession = cQuery.from(Session.class);

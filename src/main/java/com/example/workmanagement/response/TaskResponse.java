@@ -26,6 +26,7 @@ public class TaskResponse {
     private float progress;
     private float currentProgress;
     private List<TaskResponse> child;
+    private Date completeTime;
 
     public TaskResponse(Task task) {
         this.child = new ArrayList<>();
@@ -44,5 +45,6 @@ public class TaskResponse {
             this.child.add(new TaskResponse(task.getChildren().get(i)));
             this.child.get(i).user = null;
         }
+        this.completeTime=task.getCompleteTime();
     }
 }

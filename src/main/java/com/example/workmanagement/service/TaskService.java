@@ -14,6 +14,7 @@ import com.example.workmanagement.repository.UserRepository;
 import com.example.workmanagement.request.CreateChildTaskRequest;
 import com.example.workmanagement.request.CreateTaskRequest;
 import com.example.workmanagement.request.SplitTaskRequest;
+import com.example.workmanagement.request.TaskUpdateRequest;
 import com.example.workmanagement.response.TaskResponse;
 
 import jakarta.persistence.EntityManager;
@@ -117,5 +118,24 @@ public class TaskService {
         }
         taskRepo.save(parentTask);
         return new TaskResponse(parentTask);
+    }
+    public TaskResponse updateTask(TaskUpdateRequest request) throws Exception {
+        Task task = taskRepo.findById(request.getTaskId()).orElse(null);
+        if(task==null) {
+            throw new Exception("Not found");
+        } 
+        task.setName(request.getName());
+        task.setDescription(request.getDescription());
+        task.setEndTime(request.getEndTime());
+        taskRepo.save(task);
+        return new TaskResponse(task);
+    }
+    public String deleteTask(int taskId) {
+         Task task = taskRepo.findById(taskId).orElse(null);
+         if(task==null){
+            return "Task not found";
+         }
+         taskRepo.delete(task); 
+         return "Delete task success";
     }
 }

@@ -1,5 +1,6 @@
 package com.example.workmanagement.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -12,16 +13,19 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.workmanagement.model.Session;
+import com.example.workmanagement.model.Task;
 import com.example.workmanagement.model.User;
 import com.example.workmanagement.request.CreateChildTaskRequest;
 import com.example.workmanagement.request.CreateTaskRequest;
 import com.example.workmanagement.request.LoginRequest;
+import com.example.workmanagement.request.ReportRequest;
 import com.example.workmanagement.request.SplitTaskRequest;
 import com.example.workmanagement.request.TaskUpdateProgressRequest;
 import com.example.workmanagement.response.LoginResponse;
 import com.example.workmanagement.response.TaskResponse;
 import com.example.workmanagement.service.CompleteService;
 import com.example.workmanagement.service.JWTService;
+import com.example.workmanagement.service.ReportService;
 import com.example.workmanagement.service.SessionService;
 import com.example.workmanagement.service.TaskService;
 import com.example.workmanagement.service.UserService;
@@ -34,14 +38,16 @@ public class UserController {
     private final TaskService taskService;
     private final SessionService sessionService;
     private final CompleteService completeService;
+    private final ReportService reportService;
 
     public UserController(UserService userService, JWTService jwtService, TaskService taskService,
-            SessionService sessionService, CompleteService completeService) {
+            SessionService sessionService, CompleteService completeService, ReportService reportService) {
         this.taskService = taskService;
         this.userService = userService;
         this.jwtService = jwtService;
         this.sessionService = sessionService;
         this.completeService = completeService;
+        this.reportService= reportService;
     }
 
     @PostMapping("/register")
@@ -170,4 +176,66 @@ public class UserController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    @PostMapping("/update/many_progress") 
+    public ResponseEntity<List<TaskResponse>> updateManyTak(@RequestHeader("Authorization") String authHeader, @RequestBody List<TaskUpdateProgressRequest> listRequest) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        List<TaskResponse> res= new ArrayList<>();
+        try {
+        for(int i=0;i<listRequest.size();i++) {
+            res.add(completeService.updateTaskProgress(listRequest.get(i), email));
+        }
+        return new ResponseEntity<>(res, HttpStatus.OK);
+     }
+        catch(Exception e) {
+            e.printStackTrace();
+            if (e.getMessage().equals("400") || e.getMessage().equals("401") || e.getMessage().equals("404")) {
+                int statusCode = Integer.parseInt(e.getMessage());
+                HttpStatus status;
+                switch (statusCode) {
+                    case 400:
+                        status = HttpStatus.BAD_REQUEST;
+                        break;
+                    case 401:
+                        status = HttpStatus.UNAUTHORIZED;
+                        break;
+                    case 404:
+                        status = HttpStatus.NOT_FOUND;
+                        break;
+                    default:
+                        return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+                return new ResponseEntity<>(null, status);
+            }
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    @GetMapping("/work_time") 
+    public ResponseEntity<Long> getTotalWorkTime(@RequestHeader("Authorization") String authHeader) { 
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        return new ResponseEntity<>(reportService.getTotalWorkTime(email), HttpStatus.OK);
+    }
+    @GetMapping("/session_in_week") 
+    public ResponseEntity<List<Session>> getSessionInWeek(@RequestHeader("Authorization") String authHeader) {
+        String email = jwtService.extractEmail(authHeader.substring(7)); 
+        List<Session> res= reportService.getSessionInWeek(email);
+        for(Session s:res) {
+            if(s.getStartTime()==null){
+                System.out.println("Date is null");
+            }
+            s.getUser().setListTask(null);
+            s.getUser().setListSession(null);
+        }
+        return new ResponseEntity<>(res,HttpStatus.OK);
+    }
+    @PostMapping("/get_completed_task") 
+    public ResponseEntity<List<TaskResponse>> getCompletedTask(@RequestHeader("Authorization") String authHeader,@RequestBody ReportRequest request) {
+         String email = jwtService.extractEmail(authHeader.substring(7)); 
+        List<Task> resData= reportService.listCompletedTask(request.getStart(), request.getEnd(), email);
+        List<TaskResponse> res = new ArrayList<>();
+        for(int i=0;i<resData.size();i++) {
+            res.add(new TaskResponse(resData.get(i)));
+        } 
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+   
 }

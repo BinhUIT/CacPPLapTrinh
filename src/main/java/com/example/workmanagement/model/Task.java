@@ -7,6 +7,7 @@ import java.util.List;
 import com.example.workmanagement.request.CreateTaskRequest;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -43,6 +44,8 @@ public class Task {
     private String description;
     private float progress;
     private float currentProgress;
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyy-MM-dd HH:mm:ss") 
+    private Date completeTime;
     @ManyToOne
     @JoinColumn(name = "parent_id")
     private Task parent;
@@ -50,9 +53,7 @@ public class Task {
     @OneToMany(mappedBy = "parent")
     private List<Task> children;
 
-    @OneToOne
-    @JoinColumn(name = "complete_id", referencedColumnName = "completeId")
-    private Complete complete;
+    
 
     public Task(User user, String name, Date startTime, Date endTime, String description, float progress,
             float currentProgress) {
