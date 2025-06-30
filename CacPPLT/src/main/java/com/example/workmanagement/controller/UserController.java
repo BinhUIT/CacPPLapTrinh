@@ -91,7 +91,16 @@ public class UserController {
         String email = jwtService.extractEmail(authHeader.substring(7));
         return new ResponseEntity<>(taskService.getTaskByEmail(email), HttpStatus.OK);
     }
-
+    @GetMapping("/complete_task")
+    public ResponseEntity<List<TaskResponse>> getCompleteTask(@RequestHeader("Authorization") String authHeader) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        return new ResponseEntity<>(taskService.getCompleteTaskByEmail(email), HttpStatus.OK);
+    }
+    @GetMapping("/due_task_in_7_days")
+    public ResponseEntity<List<TaskResponse>> getTaskDueIn7Days(@RequestHeader("Authorization") String authHeader) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        return new ResponseEntity<>(taskService.getTasksDueInNext7DaysByEmail(email), HttpStatus.OK);
+    }
     @PostMapping("/create/new_task")
     public ResponseEntity<TaskResponse> createNewTask(@RequestHeader("Authorization") String authHeader,
             @RequestBody CreateTaskRequest request) {
