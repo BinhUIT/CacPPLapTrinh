@@ -1,7 +1,10 @@
 package com.example.workmanagement.service;
 
 import java.io.File;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -58,7 +61,56 @@ public class TaskService {
         List<Task> result = entityManager.createQuery(cQuery).getResultList();
         return this.getListTaskResponseFromListTask(result);
     }
+    public List<TaskResponse> getCompleteTaskByEmail(String email){
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Task> cQuery = cb.createQuery(Task.class);
+        Root<Task> rootTask = cQuery.from(Task.class);
+        Join<Task, User> userJoin = rootTask.join("user");
+        Predicate emailPredicate = cb.equal(userJoin.get("email"), email);
+        Predicate isRootPredicate = cb.isNull(rootTask.get("parent"));
+        Predicate progressPredicate = cb.equal(rootTask.get("progress"), 1.0);
+        cQuery.select(rootTask).where(cb.and(emailPredicate, isRootPredicate, progressPredicate));
+        List<Task> result = entityManager.createQuery(cQuery).getResultList();
+        return this.getListTaskResponseFromListTask(result);
+    }
+    public List<TaskResponse> getTasksDueInNext7DaysByEmail(String email) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Task> cQuery = cb.createQuery(Task.class);
+        Root<Task> rootTask = cQuery.from(Task.class);
+        Join<Task, User> userJoin = rootTask.join("user");
 
+        // 1. Predicate for user email
+        Predicate emailPredicate = cb.equal(userJoin.get("email"), email);
+
+        // 2. Predicate for top-level tasks (no parent)
+        Predicate isRootPredicate = cb.isNull(rootTask.get("parent"));
+
+        // 3. Predicate for tasks due in the next 7 days
+        // Get current time
+        LocalDateTime now = LocalDateTime.now();
+        // Calculate 7 days from now
+        LocalDateTime sevenDaysLater = now.plusDays(7);
+
+        // Convert LocalDateTime to java.util.Date for comparison with entity's Date field
+        Date startDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDate = Date.from(sevenDaysLater.atZone(ZoneId.systemDefault()).toInstant());
+
+        // Ensure tasks are not yet completed (progress < 100)
+        Predicate notCompletedPredicate = cb.lessThan(rootTask.get("progress"), 100f);
+
+        // Check if endTime is between now and sevenDaysLater
+        Predicate dueSoonPredicate = cb.between(rootTask.get("endTime"), startDate, endDate);
+
+        // Combine all predicates
+        cQuery.select(rootTask)
+                .where(cb.and(emailPredicate, isRootPredicate, notCompletedPredicate, dueSoonPredicate));
+
+        // Order by end time to show the soonest tasks first (optional but good for "due soon")
+        cQuery.orderBy(cb.asc(rootTask.get("endTime")));
+
+        List<Task> result = entityManager.createQuery(cQuery).getResultList();
+        return this.getListTaskResponseFromListTask(result);
+    }
     private List<TaskResponse> getListTaskResponseFromListTask(List<Task> listTask) {
         List<TaskResponse> listTaskResponse = new ArrayList<>();
         for (int i = 0; i < listTask.size(); i++) {
