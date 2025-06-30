@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +22,7 @@ import com.example.workmanagement.request.LoginRequest;
 import com.example.workmanagement.request.ReportRequest;
 import com.example.workmanagement.request.SplitTaskRequest;
 import com.example.workmanagement.request.TaskUpdateProgressRequest;
+import com.example.workmanagement.request.UserUpdateRequest;
 import com.example.workmanagement.response.LoginResponse;
 import com.example.workmanagement.response.TaskResponse;
 import com.example.workmanagement.service.CompleteService;
@@ -237,5 +239,11 @@ public class UserController {
         } 
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
-   
+    @PutMapping("/update/user")
+    public ResponseEntity<User> updateUser(@RequestHeader("Authorization") String authHeader, @RequestBody UserUpdateRequest request) {
+        String email = jwtService.extractEmail(authHeader.substring(7));
+        User user = userService.findUserByEmail(email);
+        userService.updateUser(user, request);
+        return new ResponseEntity<>(user, HttpStatus.OK);
+    }
 }
