@@ -13,6 +13,7 @@ import com.example.workmanagement.middleware.FilterUserInfo;
 import com.example.workmanagement.model.User;
 import com.example.workmanagement.repository.UserRepository;
 import com.example.workmanagement.request.LoginRequest;
+import com.example.workmanagement.request.UserUpdateRequest;
 import com.example.workmanagement.response.LoginResponse;
 
 @Service
@@ -78,5 +79,10 @@ public class UserService {
         }
         return listUser.get(0);
     }
-
+    public void updateUser(User user, UserUpdateRequest request) {
+        user.setEmail(request.getEmail());
+        user.setName(request.getName());
+        user.setPhone(request.getPhone());
+        userRepository.save(user);
+    }
 }
